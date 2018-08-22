@@ -7,6 +7,7 @@ import csv
 from random import randint
 from math import pi
 from time import sleep
+import re
 
 '''
 Webscrapes data for specified year(s) into .json files located in 'data_folder_loc' and 
@@ -180,7 +181,9 @@ def official_names(team_name):
 def scrape_boxscore(home_str, away_str, date_str, home, opp_full, year):
 
 	result = requests.get('http://www.pro-football-reference.com/boxscores/' + date_str + home_str + '.htm')
-	soup = bs4.BeautifulSoup(result.text)
+	content = re.sub(r'(?m)^\<!--.*\n?', '', result.content.decode('utf-8'))
+	content = re.sub(r'(?m)^\-->.*\n?', '', content)
+	soup = bs4.BeautifulSoup(content, 'html5lib')
 
 	away_team_official = official_names(away_str)
 	home_team_official = official_names(home_str)
@@ -188,7 +191,7 @@ def scrape_boxscore(home_str, away_str, date_str, home, opp_full, year):
 	away_dict = {}
 	home_dict = {}
 
-	table_linescore = soup.find('table', id='linescore')
+	table_linescore = soup.find('table', class_='linescore nohover stats_table no_freeze')
 	try:
 		if table_linescore.find_next('tr').contents[6].text == 'OT':
 			OT_game = True
@@ -196,39 +199,39 @@ def scrape_boxscore(home_str, away_str, date_str, home, opp_full, year):
 			OT_game = False
 	except:
 		OT_game = False
-	away_row = table_linescore.find_next('tr').find_next('tr')
-	home_row = table_linescore.find_next('tr').find_next('tr').find_next('tr')
+	away_row = table_linescore.find_next('tr').find_next('tr').find_all('td')
+	home_row = table_linescore.find_next('tr').find_next('tr').find_next('tr').find_all('td')
 
-	away_dict['Q1'] = int(away_row.contents[1].text)
-	away_dict['Q2'] = int(away_row.contents[2].text)
-	away_dict['Q3'] = int(away_row.contents[3].text)
-	away_dict['Q4'] = int(away_row.contents[4].text)
+	away_dict['Q1'] = int(away_row[2].text)
+	away_dict['Q2'] = int(away_row[3].text)
+	away_dict['Q3'] = int(away_row[4].text)
+	away_dict['Q4'] = int(away_row[5].text)
 	if OT_game:
-		away_dict['OTpts'] = int(away_row.contents[5].text)
-		away_dict['PtsS'] = int(away_row.contents[6].text)
-		away_dict['PtsA'] = int(home_row.contents[6].text)
+		away_dict['OTpts'] = int(away_row[6].text)
+		away_dict['PtsS'] = int(away_row[7].text)
+		away_dict['PtsA'] = int(home_row[7].text)
 	else:
 		away_dict['OTpts'] = 'NA'
-		away_dict['PtsS'] = int(away_row.contents[5].text)
-		away_dict['PtsA'] = int(home_row.contents[5].text)
+		away_dict['PtsS'] = int(away_row[6].text)
+		away_dict['PtsA'] = int(home_row[6].text)
 
-	home_dict['Q1'] = int(home_row.contents[1].text)
-	home_dict['Q2'] = int(home_row.contents[2].text)
-	home_dict['Q3'] = int(home_row.contents[3].text)
-	home_dict['Q4'] = int(home_row.contents[4].text)
+	home_dict['Q1'] = int(home_row[2].text)
+	home_dict['Q2'] = int(home_row[3].text)
+	home_dict['Q3'] = int(home_row[4].text)
+	home_dict['Q4'] = int(home_row[5].text)
 	if OT_game:
-		home_dict['OTpts'] = int(home_row.contents[5].text)
-		home_dict['PtsS'] = int(home_row.contents[6].text)
+		home_dict['OTpts'] = int(home_row[6].text)
+		home_dict['PtsS'] = int(home_row[7].text)
 
-		home_PtsA = int(away_row.contents[6].text)
+		home_PtsA = int(away_row[7].text)
 
 	else:
 		home_dict['OTpts'] = 'NA'
 
-		home_PtsA = int(away_row.contents[5].text)
+		home_PtsA = int(away_row[6].text)
 
 		# home_dict['PtsA'] = int(away_row.contents[5].text)
-		home_dict['PtsS'] = int(home_row.contents[5].text)
+		home_dict['PtsS'] = int(home_row[6].text)
 	table_team_stats = soup.find('table', id='team_stats')
 	for rownum, row in enumerate(table_team_stats.find_all("tr")[1:]):
 		if rownum == 0:
@@ -383,13 +386,13 @@ def scrape_boxscore(home_str, away_str, date_str, home, opp_full, year):
 			home_dict['ToP'] = float(home_time_vals[0]) + float(home_time_vals[1]) / 60.0
 	
 	if year > 2007:
-		table_def_stats = soup.find('table', id='def_stats')
+		table_def_stats = soup.find('table', id='player_defense')
 		away_dict['FF'] = 0
 		home_dict['FF'] = 0
 		away_dict['DTdsS'] = 0
 		home_dict['DTdsS'] = 0
 		for rownum, row in enumerate(table_def_stats.find_all("tr")):
-			if len(row.attrs['class']) == 1:
+			if len(row.attrs) == 1:
 				if year < 2015:
 					if row.contents[3].text.lower() == away_team_official.lower() and row.contents[11].text != '':
 						away_dict['DTdsS'] += int(row.contents[11].text)
@@ -418,22 +421,22 @@ def scrape_boxscore(home_str, away_str, date_str, home, opp_full, year):
 						home_dict['FF'] += int(row.contents[25].text)
 	try:
 		# VALID AFTER 1997 ONLY!
-		table_drive_stats = soup.find_all('table', class_='sortable  stats_table')
+		table_drive_stats = soup.find_all('table', class_='sortable stats_table')
 		if year > 2014:
 			table_drive_away_stats = table_drive_stats[2]
 			table_drive_home_stats = table_drive_stats[3]
 		else:
-			table_drive_away_stats = table_drive_stats[0]
-			table_drive_home_stats = table_drive_stats[1]
+			table_drive_away_stats = soup.find('table', id='vis_drives')
+			table_drive_home_stats = soup.find('table', id='home_drives')
 		away_drives = 0
 		away_scores = 0
 		away_tds = 0
 		for rownum, row in enumerate(table_drive_away_stats.find_all("tr")[1:]):
 			away_drives += 1
-			if row.contents[15].text == 'Touchdown':
+			if row.contents[7].text == 'Touchdown':
 				away_scores += 1
 				away_tds += 1
-			elif row.contents[15].text == 'Field Goal':
+			elif row.contents[7].text == 'Field Goal':
 				away_scores += 1
 		away_dict['OScores'] = away_scores
 		away_dict['OTds'] = away_tds
@@ -446,10 +449,10 @@ def scrape_boxscore(home_str, away_str, date_str, home, opp_full, year):
 		home_tds = 0
 		for rownum, row in enumerate(table_drive_home_stats.find_all("tr")[1:]):
 			home_drives += 1
-			if row.contents[15].text == 'Touchdown':
+			if row.contents[7].text == 'Touchdown':
 				home_scores += 1
 				home_tds += 1
-			elif row.contents[15].text == 'Field Goal':
+			elif row.contents[7].text == 'Field Goal':
 				home_scores += 1
 		home_dict['OScores'] = home_scores
 		away_dict['DScoresA'] = home_scores
@@ -482,28 +485,28 @@ def scrape_boxscore(home_str, away_str, date_str, home, opp_full, year):
 		# if count in [3, 4, 7]:
 		# 	away_dict[row.find_next("td").text] = row.find_next("td").find_next("td").text.strip()
 		# 	home_dict[row.find_next("td").text] = row.find_next("td").find_next("td").text.strip()
-		col_name = row.find_next("td").text
+		col_name = row.find_next("th").text
 		
-		if col_name == 'Vegas Line' and row.find_next("td").find_next("td").text == 'Pick':
-			home_dict[row.find_next("td").text] = 0.0
-			away_dict[row.find_next("td").text] = 0.0
-		elif col_name == 'Vegas Line' and opp_full in row.find_next("td").find_next("td").text.strip():
+		if col_name == 'Vegas Line' and row.find_next("td").text == 'Pick':
+			home_dict[col_name] = 0.0
+			away_dict[col_name] = 0.0
+		elif col_name == 'Vegas Line' and opp_full in row.find_next("td").text.strip():
 			if team_rename(opp_full) == home_str:
-				home_dict[row.find_next("td").text] = -1 * float(row.find_next("td").find_next("td").text.split('-')[-1])
-				away_dict[row.find_next("td").text] = float(row.find_next("td").find_next("td").text.split('-')[-1])
+				home_dict[col_name] = -1 * float(row.find_next("td").text.split(' ')[-1])
+				away_dict[col_name] = float(row.find_next("td").text.split(' ')[-1])
 			else:
-				home_dict[row.find_next("td").text] = float(row.find_next("td").find_next("td").text.split('-')[-1])
-				away_dict[row.find_next("td").text] = -1 * float(row.find_next("td").find_next("td").text.split('-')[-1])
+				home_dict[col_name] = float(row.find_next("td").text.split(' ')[-1])
+				away_dict[col_name] = -1 * float(row.find_next("td").text.split(' ')[-1])
 		elif col_name == 'Vegas Line':
 			if team_rename(opp_full) == home_str:
-				home_dict[row.find_next("td").text] = float(row.find_next("td").find_next("td").text.split('-')[-1])
-				away_dict[row.find_next("td").text] = -1 * float(row.find_next("td").find_next("td").text.split('-')[-1])
+				home_dict[col_name] = float(row.find_next("td").text.split(' ')[-1])
+				away_dict[col_name] = -1 * float(row.find_next("td").text.split(' ')[-1])
 			else:
-				home_dict[row.find_next("td").text] = -1 * float(row.find_next("td").find_next("td").text.split('-')[-1])
-				away_dict[row.find_next("td").text] = float(row.find_next("td").find_next("td").text.split('-')[-1])
+				home_dict[col_name] = -1 * float(row.find_next("td").text.split(' ')[-1])
+				away_dict[col_name] = float(row.find_next("td").text.split(' ')[-1])
 		elif col_name == 'Over/Under':
-			away_dict[row.find_next("td").text] = float(row.find_next("td").find_next("td").text.split('(')[0].strip())
-			home_dict[row.find_next("td").text] = float(row.find_next("td").find_next("td").text.split('(')[0].strip())
+			away_dict[col_name] = float(row.find_next("td").text.split(' ')[0].strip())
+			home_dict[col_name] = float(row.find_next("td").text.split(' ')[0].strip())
 
 
 	# print home_dict
@@ -525,18 +528,18 @@ def scrape_boxscore(home_str, away_str, date_str, home, opp_full, year):
 def scrape_gamelog(team, year, max_week):
 	result = requests.get('http://www.pro-football-reference.com/teams/' + team + '/' + year + '.htm')
 	# print result.encoding
-	soup = bs4.BeautifulSoup(result.text)
+	soup = bs4.BeautifulSoup(result.text, "html5lib")
 
-	table_gamelog = soup.find('table', id = 'team_gamelogs')
+	table_gamelog = soup.find('table', id = 'games')
 
 	dict1 = {}
 	ordered_keys = []
 	for count, row in enumerate(table_gamelog.find_all("th")[5:]):
 		# print count, row.text
-		if count in [1, 3, 21, 22,23] + range(9, 21):
+		if count in [2, 3, 21, 22,23] + list(range(9, 21)):
 			ordered_keys.append('Skip')
 			continue
-		elif count in [0, 2, 5, 6, 8]:
+		elif count in [0, 1, 5, 6]:
 			dict1[row.text] = []
 			ordered_keys.append(row.text)
 		elif count == 4:
@@ -545,47 +548,46 @@ def scrape_gamelog(team, year, max_week):
 		elif count == 7:
 			dict1['Home'] = []
 			ordered_keys.append('Home')
+		elif count == 8:
+			dict1['Opp'] = []
+			ordered_keys.append('Opp')
+
 	# print dict1.keys()
 	# print ordered_keys
 	# print dict1
 
 	first_row = True
 	for count, row in enumerate(table_gamelog.find_all("tr")):
-		# row_data = row.find_all("td")
+		row_data = list(map(lambda x: x.text, row.find_all('td')))
 		# print len(row_data), row_data
 		# print count
-		if (count - 1) <= max_week and row.text.split('\n')[1].isdigit() and row.text.split('\n')[ordered_keys.index('Opp') + 1] != 'Bye Week':
-			for count, col in enumerate(row.find_all("td")):
-				if count == 0:
-					if col.text == '':
-						dict1[ordered_keys[count]].append(0)
-						week = int(col.text)
-					else:
-						week = int(col.text)
-						dict1[ordered_keys[count]].append(int(col.text))
-				elif count in [4, 6]:
-					dict1[ordered_keys[count]].append(col.text)
-				elif count == 8:
+		if len(row_data) != 0 and (count - 1) <= max_week and len(row_data[1]) > 0:
+			week = row.find('th').text
+			dict1[ordered_keys[0]].append(int(week))
+			for count2, col in enumerate(row.find_all("td")):
+				if count2 in [4, 6]:
+					dict1[ordered_keys[count2]].append(col.text)
+				elif count2 == 8:
 					opp = col.text
-					dict1[ordered_keys[count]].append(col.text)
-				elif count == 2:
+					dict1[ordered_keys[count2]].append(col.text)
+				elif count2 == 1:
 					if 'January' in col.text or 'February' in col.text:
 						date_str = get_date(str(int(year) + 1), col.text)
 					else:
 						date_str = get_date(year, col.text)
-					dict1[ordered_keys[count]].append(date_str)
-				elif count == 5:
+					dict1[ordered_keys[count2]].append(date_str)
+				elif count2 == 5:
 					if col.text == 'OT':
-						dict1[ordered_keys[count]].append(True)
+						dict1[ordered_keys[count2]].append(True)
 					else:
-						dict1[ordered_keys[count]].append(False)
-				elif count == 7:
+						dict1[ordered_keys[count2]].append(False)
+				elif count2 == 7:
 					if col.text == '@':
 						home = False
-						dict1[ordered_keys[count]].append(False)
+						dict1[ordered_keys[count2]].append(False)
 					else:
 						home = True
-						dict1[ordered_keys[count]].append(True)
+						dict1[ordered_keys[count2]].append(True)
 
 			if home:
 				home_str = team
@@ -597,7 +599,7 @@ def scrape_gamelog(team, year, max_week):
 			# print home, week, home_str, away_str, opp, date_str
 
 			# Now get boxscore for each row (home_str, away_str, date_str, home, opp_full, year):\
-			print 'Webscraping boxscore for week ' +  str(week) + ' for team ' + team + ' for year ' + str(year)			
+			print('Webscraping boxscore for week ' +  str(week) + ' for team ' + team + ' for year ' + str(year))			
 			boxscore_dict = scrape_boxscore(home_str, away_str, date_str, home, opp, int(year))
 			sleep(randint(80,150) / 7.0 / pi)
 			# print boxscore_dict
@@ -620,7 +622,7 @@ def create_row_data_train(home_game_data, away_team, Week, year, Model, measure,
 	away_str = team_rename(away_team)
 
 	if not os.path.isfile(os.path.join(data_folder_loc, data_name + away_str + '_' + year + '.json')):
-		print 'Webscraping game log for away team (with a short delay)'
+		print('Webscraping game log for away team (with a short delay)')
 		scrape_gamelog(away_str, year, max_week)
 		sleep(randint(80,150) / 7.0 / pi)
 
@@ -703,14 +705,14 @@ variables = ['H_' + i for i in master_variable_list] + ['A_' + i for i in master
 variables_15 = ['H_' + i for i in master_variable_list] + ['A_' + i for i in master_variable_list] + ['H_' + i + '_Avg_YTD' for i in master_variable_list_avg_ytd] + ['A_' + i + '_Avg_YTD' for i in master_variable_list_avg_ytd]
 
 if print_variables:
-	print variables
+	print(variables)
 
 header = ['Year', 'Week', 'Home', 'Away', 'Result', 'Vegas_Line', 'Over/Under'] + variables
 header_15 = ['Year', 'Week', 'Home', 'Away', 'Result', 'Vegas_Line', 'Over/Under'] + variables_15
 
 
 model_file = os.path.join(model_folder_loc, model_filename)
-with open(model_file, 'wb') as myfile:
+with open(model_file, 'w') as myfile:
 	wr = csv.writer(myfile, quoting=csv.QUOTE_ALL)
 	if years != [2015]:
 		wr.writerow(header)
@@ -723,7 +725,7 @@ with open(model_file, 'wb') as myfile:
 			data_name = 'all_data_'
 		for team in team_list:
 			if not os.path.isfile(os.path.join(data_folder_loc, data_name + team + '_' + str(year) + '.json')):
-				print 'Webscraping game log for home team (with a short delay)'
+				print('Webscraping game log for home team (with a short delay)')
 				scrape_gamelog(team, str(year), end_week[count])
 				sleep(randint(80,150) / 7.1 / pi)
 			with open(os.path.join(data_folder_loc, data_name + team + '_' + str(year) + '.json'),'r') as team_file:
