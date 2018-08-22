@@ -34,84 +34,44 @@ model_filename = 'Master_file_13_14.csv'
 years = [2013, 2014]
 start_week = [1, 1]
 end_week = [17, 17]
-team_list = ['crd', 'atl', 'rav', 'buf', 'car', 'chi', 'cin', 'cle', 'dal', 'den', 'det','gnb', 
-'htx', 'clt', 'jax', 'kan', 'mia', 'min', 'nwe', 'nor', 'nyg', 'nyj', 'rai', 'phi', 'pit', 
-'sdg', 'sfo', 'sea', 'ram', 'tam', 'oti', 'was']
 print_variables = True
-
-
-
-
-
-def team_rename(team_s):
-	if team_s == 'Arizona Cardinals':
-		ts = 'crd'
-	elif team_s == 'Atlanta Falcons':
-		ts = 'atl'
-	elif team_s == 'Baltimore Ravens':
-		ts = 'rav'
-	elif team_s == 'Buffalo Bills':
-		ts = 'buf'
-	elif team_s == 'Carolina Panthers':
-		ts = 'car'
-	elif team_s == 'Chicago Bears':
-		ts = 'chi'
-	elif team_s == 'Cincinnati Bengals':
-		ts = 'cin'
-	elif team_s == 'Cleveland Browns':
-		ts = 'cle'
-	elif team_s == 'Dallas Cowboys':
-		ts = 'dal'
-	elif team_s == 'Denver Broncos':
-		ts = 'den'
-	elif team_s == 'Detroit Lions':
-		ts = 'det'
-	elif team_s == 'Green Bay Packers':
-		ts = 'gnb'
-	elif team_s == 'Houston Texans':
-		ts = 'htx'
-	elif team_s == 'Indianapolis Colts':
-		ts = 'clt'
-	elif team_s == 'Jacksonville Jaguars':
-		ts = 'jax'
-	elif team_s == 'Kansas City Chiefs':
-		ts = 'kan'
-	elif team_s == 'Miami Dolphins':
-		ts = 'mia'
-	elif team_s == 'Minnesota Vikings':
-		ts = 'min'
-	elif team_s == 'New England Patriots':
-		ts = 'nwe'
-	elif team_s == 'New Orleans Saints':
-		ts = 'nor'
-	elif team_s == 'New York Giants':
-		ts = 'nyg'
-	elif team_s == 'New York Jets':
-		ts = 'nyj'
-	elif team_s == 'Oakland Raiders':
-		ts = 'rai'
-	elif team_s == 'Philadelphia Eagles':
-		ts = 'phi'
-	elif team_s == 'Pittsburgh Steelers':
-		ts = 'pit'
-	elif team_s == 'San Diego Chargers':
-		ts = 'sdg'
-	elif team_s == 'San Francisco 49ers':
-		ts = 'sfo'
-	elif team_s == 'Seattle Seahawks':
-		ts = 'sea'
-	elif team_s == 'St. Louis Rams':
-		ts = 'ram'
-	elif team_s == 'Tampa Bay Buccaneers':
-		ts = 'tam'
-	elif team_s == 'Tennessee Titans':
-		ts = 'oti'
-	elif team_s == 'Washington Redskins':
-		ts = 'was'
-	else:
-		raise NameError('Invalid team name')
-	return ts
-
+team_rename = {'Arizona Cardinals':'crd',
+			   'Atlanta Falcons': 'atl',
+			   'Baltimore Ravens': 'rav',
+			   'Buffalo Bills': 'buf',
+			   'Carolina Panthers': 'car',
+			   'Chicago Bears': 'chi',
+			   'Cincinnati Bengals': 'cin',
+			   'Cleveland Browns': 'cle',
+			   'Dallas Cowboys': 'dal',
+			   'Denver Broncos': 'den',
+			   'Detroit Lions': 'det',
+			   'Green Bay Packers': 'gnb',
+			   'Houston Texans': 'htx',
+			   'Indianapolis Colts': 'clt',
+			   'Jacksonville Jaguars': 'jax',
+			   'Kansas City Chiefs': 'kan',
+			   'Miami Dolphins': 'mia',
+			   'Minnesota Vikings': 'min',
+			   'New England Patriots': 'nwe',
+			   'New Orleans Saints': 'nor',
+			   'New York Giants':  'nyg',
+			   'New York Jets': 'nyj',
+			   'Oakland Raiders': 'rai',
+			   'Las Vegas Raiders': 'rai',
+			   'Philadelphia Eagles': 'phi',
+			   'Pittsburgh Steelers': 'pit',
+			   'San Diego Chargers': 'sdg',
+			   'Los Angeles Chargers': 'sdg',
+			   'San Francisco 49ers': 'sfo',
+			   'Seattle Seahawks': 'sea',
+			   'St. Louis Rams': 'ram',
+			   'Los Angeles Rams': 'ram',
+			   'Tampa Bay Buccaneers': 'tam',
+			   'Tennessee Titans': 'oti',
+			   'Washington Redskins': 'was'
+			   }
+team_list = list(team_rename.values())
 
 def get_win_percentages(team_data, Week, Home):
 	'''
@@ -491,14 +451,14 @@ def scrape_boxscore(home_str, away_str, date_str, home, opp_full, year):
 			home_dict[col_name] = 0.0
 			away_dict[col_name] = 0.0
 		elif col_name == 'Vegas Line' and opp_full in row.find_next("td").text.strip():
-			if team_rename(opp_full) == home_str:
+			if team_rename[opp_full] == home_str:
 				home_dict[col_name] = -1 * float(row.find_next("td").text.split(' ')[-1])
 				away_dict[col_name] = float(row.find_next("td").text.split(' ')[-1])
 			else:
 				home_dict[col_name] = float(row.find_next("td").text.split(' ')[-1])
 				away_dict[col_name] = -1 * float(row.find_next("td").text.split(' ')[-1])
 		elif col_name == 'Vegas Line':
-			if team_rename(opp_full) == home_str:
+			if team_rename[opp_full] == home_str:
 				home_dict[col_name] = float(row.find_next("td").text.split(' ')[-1])
 				away_dict[col_name] = -1 * float(row.find_next("td").text.split(' ')[-1])
 			else:
@@ -591,10 +551,10 @@ def scrape_gamelog(team, year, max_week):
 
 			if home:
 				home_str = team
-				away_str = team_rename(opp)
+				away_str = team_rename[opp]
 			else:
 				away_str = team
-				home_str = team_rename(opp)
+				home_str = team_rename[opp]
 			# print dict1
 			# print home, week, home_str, away_str, opp, date_str
 
@@ -619,7 +579,7 @@ def scrape_gamelog(team, year, max_week):
 
 def create_row_data_train(home_game_data, away_team, Week, year, Model, measure, max_week):
 
-	away_str = team_rename(away_team)
+	away_str = team_rename[away_team]
 
 	if not os.path.isfile(os.path.join(data_folder_loc, data_name + away_str + '_' + year + '.json')):
 		print('Webscraping game log for away team (with a short delay)')
@@ -746,8 +706,8 @@ with open(model_file, 'w') as myfile:
 							row_data_single = create_row_data_train(team_data, away_team_name, week_num, str(year), master_variable_list, 'single game', end_week[count])
 							row_data_avg_ytd = create_row_data_train(team_data, away_team_name, week_num, str(year), master_variable_list_avg_ytd, 'avg_ytd', end_week[count])
 							row_data_avg_yr = create_row_data_train(team_data, away_team_name, week_num, str(year), master_variable_list_avg_yr, 'avg_yr', end_week[count])
-							wr.writerow([str(year), str(week_num), team, team_rename(away_team_name), result, vegas_index, over_under_index] + row_data_single + row_data_avg_ytd + row_data_avg_yr)
+							wr.writerow([str(year), str(week_num), team, team_rename[away_team_name], result, vegas_index, over_under_index] + row_data_single + row_data_avg_ytd + row_data_avg_yr)
 						else:
 							row_data_single = create_row_data_train(team_data, away_team_name, week_num, str(year), master_variable_list, 'single game', end_week[count])
 							row_data_avg_ytd = create_row_data_train(team_data, away_team_name, week_num, str(year), master_variable_list_avg_ytd, 'avg_ytd', end_week[count])
-							wr.writerow([str(year), str(week_num), team, team_rename(away_team_name), result, vegas_index, over_under_index] + row_data_single + row_data_avg_ytd)
+							wr.writerow([str(year), str(week_num), team, team_rename[away_team_name], result, vegas_index, over_under_index] + row_data_single + row_data_avg_ytd)
