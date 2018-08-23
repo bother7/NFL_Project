@@ -31,7 +31,7 @@ Variable list is printed by default.
 data_folder_loc = '../NFL/Data'
 model_folder_loc = '../NFL/Models'
 model_filename = 'Master_file_13_14.csv' 
-years = [2013, 2014]
+years = [2014]
 start_week = [1, 1]
 end_week = [17, 17]
 print_variables = True
@@ -352,33 +352,33 @@ def scrape_boxscore(home_str, away_str, date_str, home, opp_full, year):
 		away_dict['DTdsS'] = 0
 		home_dict['DTdsS'] = 0
 		for rownum, row in enumerate(table_def_stats.find_all("tr")):
-			if len(row.attrs) == 1:
+			if row.find('th').attrs['data-stat'] == 'player':
 				if year < 2015:
-					if row.contents[3].text.lower() == away_team_official.lower() and row.contents[11].text != '':
+					if row.contents[1].text.lower() == away_team_official.lower() and row.contents[11].text != '':
 						away_dict['DTdsS'] += int(row.contents[11].text)
-					elif row.contents[3].text.lower() == home_team_official.lower() and row.contents[11].text != '':
+					elif row.contents[1].text.lower() == home_team_official.lower() and row.contents[11].text != '':
 						home_dict['DTdsS'] += int(row.contents[11].text)
-					if row.contents[3].text.lower() == away_team_official.lower() and row.contents[19].text != '':
-						away_dict['DTdsS'] += int(row.contents[19].text)
-					elif row.contents[3].text.lower() == home_team_official.lower() and row.contents[19].text != '':
-						home_dict['DTdsS'] += int(row.contents[19].text)
-					if row.contents[3].text.lower() == away_team_official.lower() and row.contents[21].text != '':
-						away_dict['FF'] += int(row.contents[21].text)
-					elif row.contents[3].text.lower() == home_team_official.lower() and row.contents[21].text != '':
-						home_dict['FF'] += int(row.contents[21].text)
+					if row.contents[1].text.lower() == away_team_official.lower() and row.contents[4].text != '':
+						away_dict['DTdsS'] += int(row.contents[4].text)
+					elif row.contents[1].text.lower() == home_team_official.lower() and row.contents[4].text != '':
+						home_dict['DTdsS'] += int(row.contents[4].text)
+					if row.contents[1].text.lower() == away_team_official.lower() and row.contents[12].text != '':
+						away_dict['FF'] += int(row.contents[12].text)
+					elif row.contents[1].text.lower() == home_team_official.lower() and row.contents[12].text != '':
+						home_dict['FF'] += int(row.contents[12].text)
 				else:
-					if row.contents[3].text.lower() == away_team_official.lower() and row.contents[23].text != '':
-						away_dict['DTdsS'] += int(row.contents[23].text)
-					elif row.contents[3].text.lower() == home_team_official.lower() and row.contents[23].text != '':
-						home_dict['DTdsS'] += int(row.contents[23].text)
-					if row.contents[3].text.lower() == away_team_official.lower() and row.contents[9].text != '':
-						away_dict['DTdsS'] += int(row.contents[9].text)
-					elif row.contents[3].text.lower() == home_team_official.lower() and row.contents[9].text != '':
-						home_dict['DTdsS'] += int(row.contents[9].text)
-					if row.contents[3].text.lower() == away_team_official.lower() and row.contents[25].text != '':
-						away_dict['FF'] += int(row.contents[25].text)
-					elif row.contents[3].text.lower() == home_team_official.lower() and row.contents[25].text != '':
-						home_dict['FF'] += int(row.contents[25].text)
+					if row.contents[1].text.lower() == away_team_official.lower() and row.contents[4].text != '':
+						away_dict['DTdsS'] += int(row.contents[4].text)
+					elif row.contents[1].text.lower() == home_team_official.lower() and row.contents[4].text != '':
+						home_dict['DTdsS'] += int(row.contents[4].text)
+					if row.contents[1].text.lower() == away_team_official.lower() and row.contents[11].text != '':
+						away_dict['DTdsS'] += int(row.contents[11].text)
+					elif row.contents[1].text.lower() == home_team_official.lower() and row.contents[11].text != '':
+						home_dict['DTdsS'] += int(row.contents[11].text)
+					if row.contents[1].text.lower() == away_team_official.lower() and row.contents[12].text != '':
+						away_dict['FF'] += int(row.contents[12].text)
+					elif row.contents[1].text.lower() == home_team_official.lower() and row.contents[12].text != '':
+						home_dict['FF'] += int(row.contents[12].text)
 	try:
 		# VALID AFTER 1997 ONLY!
 		table_drive_stats = soup.find_all('table', class_='sortable stats_table')
@@ -499,9 +499,15 @@ def scrape_gamelog(team, year, max_week):
 		if count in [2, 3, 21, 22,23] + list(range(9, 21)):
 			ordered_keys.append('Skip')
 			continue
-		elif count in [0, 1, 5, 6]:
+		elif count in [0, 1]:
 			dict1[row.text] = []
 			ordered_keys.append(row.text)
+		elif count == 6:
+			dict1['Record'] = []
+			ordered_keys.append('Record')
+		elif count == 5:
+			dict1['OT'] = []
+			ordered_keys.append('OT')
 		elif count == 4:
 			dict1['W/L'] = []
 			ordered_keys.append('W/L')
@@ -525,7 +531,7 @@ def scrape_gamelog(team, year, max_week):
 			week = row.find('th').text
 			dict1[ordered_keys[0]].append(int(week))
 			for count2, col in enumerate(row.find_all("td")):
-				if count2 in [4, 6]:
+				if count2 == 4:
 					dict1[ordered_keys[count2]].append(col.text)
 				elif count2 == 8:
 					opp = col.text
@@ -548,7 +554,8 @@ def scrape_gamelog(team, year, max_week):
 					else:
 						home = True
 						dict1[ordered_keys[count2]].append(True)
-
+				elif count2 == 6:
+					dict1[ordered_keys[count2]].append(list(col.text.split('-')))
 			if home:
 				home_str = team
 				away_str = team_rename[opp]
