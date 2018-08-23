@@ -31,7 +31,7 @@ Variable list is printed by default.
 data_folder_loc = '../NFL/Data'
 model_folder_loc = '../NFL/Models'
 model_filename = 'Master_file_13_14.csv' 
-years = [2014]
+years = [2016]
 start_week = [1, 1]
 end_week = [17, 17]
 print_variables = True
@@ -383,8 +383,8 @@ def scrape_boxscore(home_str, away_str, date_str, home, opp_full, year):
 		# VALID AFTER 1997 ONLY!
 		table_drive_stats = soup.find_all('table', class_='sortable stats_table')
 		if year > 2014:
-			table_drive_away_stats = table_drive_stats[2]
-			table_drive_home_stats = table_drive_stats[3]
+			table_drive_away_stats = soup.find('table', id='vis_drives')
+			table_drive_home_stats = soup.find('table', id='home_drives')
 		else:
 			table_drive_away_stats = soup.find('table', id='vis_drives')
 			table_drive_home_stats = soup.find('table', id='home_drives')
@@ -681,15 +681,15 @@ header_15 = ['Year', 'Week', 'Home', 'Away', 'Result', 'Vegas_Line', 'Over/Under
 model_file = os.path.join(model_folder_loc, model_filename)
 with open(model_file, 'w') as myfile:
 	wr = csv.writer(myfile, quoting=csv.QUOTE_ALL)
-	if years != [2015]:
-		wr.writerow(header)
-	else:
-		wr.writerow(header_15)
+	# if years != [2015]:
+	wr.writerow(header)
+	# else:
+	# wr.writerow(header_15)
 	for count, year in enumerate(years):
-		if year == 2015:
-			data_name = 'data_w' + str(end_week[-1]) + '_'
-		else:
-			data_name = 'all_data_'
+		# if year == 2015:
+		#	data_name = 'data_w' + str(end_week[-1]) + '_'
+		# else:
+		data_name = 'all_data_'
 		for team in team_list:
 			if not os.path.isfile(os.path.join(data_folder_loc, data_name + team + '_' + str(year) + '.json')):
 				print('Webscraping game log for home team (with a short delay)')
@@ -709,12 +709,12 @@ with open(model_file, 'w') as myfile:
 							result = 0.5
 						else:
 							result = 0
-						if year != 2015:
-							row_data_single = create_row_data_train(team_data, away_team_name, week_num, str(year), master_variable_list, 'single game', end_week[count])
-							row_data_avg_ytd = create_row_data_train(team_data, away_team_name, week_num, str(year), master_variable_list_avg_ytd, 'avg_ytd', end_week[count])
-							row_data_avg_yr = create_row_data_train(team_data, away_team_name, week_num, str(year), master_variable_list_avg_yr, 'avg_yr', end_week[count])
-							wr.writerow([str(year), str(week_num), team, team_rename[away_team_name], result, vegas_index, over_under_index] + row_data_single + row_data_avg_ytd + row_data_avg_yr)
-						else:
-							row_data_single = create_row_data_train(team_data, away_team_name, week_num, str(year), master_variable_list, 'single game', end_week[count])
-							row_data_avg_ytd = create_row_data_train(team_data, away_team_name, week_num, str(year), master_variable_list_avg_ytd, 'avg_ytd', end_week[count])
-							wr.writerow([str(year), str(week_num), team, team_rename[away_team_name], result, vegas_index, over_under_index] + row_data_single + row_data_avg_ytd)
+						#if year != 2015:
+						row_data_single = create_row_data_train(team_data, away_team_name, week_num, str(year), master_variable_list, 'single game', end_week[count])
+						row_data_avg_ytd = create_row_data_train(team_data, away_team_name, week_num, str(year), master_variable_list_avg_ytd, 'avg_ytd', end_week[count])
+						row_data_avg_yr = create_row_data_train(team_data, away_team_name, week_num, str(year), master_variable_list_avg_yr, 'avg_yr', end_week[count])
+						wr.writerow([str(year), str(week_num), team, team_rename[away_team_name], result, vegas_index, over_under_index] + row_data_single + row_data_avg_ytd + row_data_avg_yr)
+						#else:
+						#	row_data_single = create_row_data_train(team_data, away_team_name, week_num, str(year), master_variable_list, 'single game', end_week[count])
+						#	row_data_avg_ytd = create_row_data_train(team_data, away_team_name, week_num, str(year), master_variable_list_avg_ytd, 'avg_ytd', end_week[count])
+						#	wr.writerow([str(year), str(week_num), team, team_rename[away_team_name], result, vegas_index, over_under_index] + row_data_single + row_data_avg_ytd)
